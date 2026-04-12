@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module jdoodle;
+/* module jdoodle;
 
     reg clk;
     reg ready;
@@ -9,7 +9,7 @@ module jdoodle;
     wire [8:0] y;
     wire [8:0] z;
     
-    calculate_points dut (
+    calculator dut (
         .clk(clk),
         .ready(ready),
         .done(done),
@@ -44,10 +44,10 @@ module jdoodle;
         $finish(2);
     end
 
-endmodule
+endmodule */
 
 
-module calculate_points (
+module calculator (
 	input wire ready,
     input wire clk,
     
