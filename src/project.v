@@ -57,8 +57,8 @@ module tt_um_lorenz_attractor_vga (
        .hsync(hsync),
        .vsync(vsync),
        .display_on(video_active),
-       .xpos(pix_x),
-       .ypos(pix_y)
+       .vpos(pix_x),
+       .hpos(pix_y)
    );
 
 
