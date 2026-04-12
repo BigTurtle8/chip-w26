@@ -26,7 +26,7 @@ module tt_um_lorenz_attractor_vga (
 
 
    // 3. Sub-Module Instantiations
-   calculator my_calc (
+   calculator my_calc ( // CHLOE TO DO 
        .clk(clk),
        .rst_n(rst_n),
        .ready(storage_ready),
