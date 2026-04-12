@@ -51,10 +51,10 @@ module calculator (
 	input wire ready,
     input wire clk,
     
-    // 1st bit = sign, last 8 bits = val
-    output wire [8:0] x,
-    output wire [8:0] y,
-    output wire [8:0] z,
+    // 1st bit = sign, last 9 bits = val
+    output wire [9:0] x,
+    output wire [9:0] y,
+    output wire [9:0] z,
     
     output reg done
 );
@@ -106,10 +106,10 @@ wire signed [31:0] x_next = x_reg + dx[31:0];
 wire signed [31:0] y_next = y_reg + dy[31:0];
 wire signed [31:0] z_next = z_reg + dz[31:0];
 
-// extract most significant 9 bits
-assign x = x_reg[FRAC+8 : FRAC];
-assign y = y_reg[FRAC+8 : FRAC];
-assign z = z_reg[FRAC+8 : FRAC];
+// extract most significant 10 bits
+assign x = x_reg[FRAC+9 : FRAC];
+assign y = y_reg[FRAC+9 : FRAC];
+assign z = z_reg[FRAC+9 : FRAC];
 
 always @(posedge clk) begin
     done <= 1'b0;
