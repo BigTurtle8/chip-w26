@@ -1,14 +1,17 @@
 module point_storage (
-   input  wire        clk,
-   input  wire        rst_n,
-   input  wire        valid_in,
-   input  wire [29:0] point_in,
-   output wire        ready_out,
+   input  wire       clk,
+   input  wire       rst_n,
+   input  wire       valid_in,
+   input  wire [9:0] x_in,
+   input  wire [9:0] y_in,
+   input  wire [9:0] z_in,
+   output wire       ready_out,
    output wire [299:0] full_bus_out
 );
+   wire [29:0] point_in = { x_in, y_in, z_in };
+
    reg [29:0] memory [0:9];
    integer i;
-
 
    always @(posedge clk) begin
        if (!rst_n) begin

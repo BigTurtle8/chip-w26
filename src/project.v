@@ -19,7 +19,9 @@ module tt_um_lorenz_attractor_vga (
 
 
    // 2. Data Buses
-   wire [29:0]  current_point;    
+   wire [9:0]   current_x;
+   wire [9:0]   current_y;
+   wire [9:0]   current_z;
    wire [299:0] stored_points;    
    wire [219:0] adjusted_coords;  
    wire valid_calc, storage_ready;
@@ -28,10 +30,12 @@ module tt_um_lorenz_attractor_vga (
    // 3. Sub-Module Instantiations
    calculator my_calc ( // CHLOE TO DO 
        .clk(clk),
-       .rst_n(rst_n),
+       //.rst_n(rst_n),
        .ready(storage_ready),
-       .valid(valid_calc),
-       .out_xyz(current_point)
+       .done(valid_calc),
+       .x(current_x),
+       .y(current_y),
+       .z(current_z)
    );
 
 
@@ -39,7 +43,9 @@ module tt_um_lorenz_attractor_vga (
        .clk(clk),
        .rst_n(rst_n),
        .valid_in(valid_calc),
-       .point_in(current_point),
+       .x_in(current_x),
+       .y_in(current_y),
+       .z_in(current_z),
        .ready_out(storage_ready),
        .full_bus_out(stored_points)
    );
@@ -72,6 +78,9 @@ module tt_um_lorenz_attractor_vga (
 
 
    always @(*) begin
+       pt_x = 10'd0;
+       pt_y = 10'd0;
+       z_depth = 2'd0;
        pixel_rgb = 6'b000000; // Default: Black
       
        if (video_active) begin
