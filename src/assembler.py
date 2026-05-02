@@ -40,6 +40,7 @@ def clean_and_tokenize(line):
 def process_file(file):
     instructions = []  # Our 2D array (list of lists)
     labels = {}        # Our map for bookmarks
+    current_instruction = 0
     
     for line in file:
         tokens = clean_and_tokenize(line)
@@ -53,10 +54,16 @@ def process_file(file):
             # It's a label! (e.g., "loop:")
             label_name = tokens[0].replace(":", "")
             # Save the current position (how many instructions we've found so far)
-            labels[label_name] = len(instructions)
+            labels[label_name] = current_instruction
         else:
             # It's a real instruction!
-            instructions.append(tokens)
+            if (tokens[0] == "BLT" and tokens[1] not in registers):
+                instructions.append(["ADDI_PLACEHOLDER"])
+                instructions.append(tokens)
+                current_instruction += 2
+            else:
+                instructions.append(tokens)
+                current_instruction += 1
             
     return instructions, labels
 
@@ -123,14 +130,23 @@ def assemble(file_path):
     # Pass 2: Translate each instruction
     for i in range(len(instructions)):
         # check if we have a blt instruction that needs an offset
-        if (instructions[i][0] == "BLT" and ):
-            target_address = labels[instructions[i][1]]
+        if (instructions[i][0] == "BLT" and instructions[i][1] in labels):
+            
+            blt_instructions = [instructions[i][0], 'r4', instructions[i][2], instructions[i][3]]
+            binary_str_2 = process_tokens(blt_instructions)
+            machine_code.append(binary_str_2)
+            
+        elif (instructions[i][0] == "ADDI_PLACEHOLDER"):
+            label_name = instructions[i + 1][1]
+            target_address = labels[label_name]
             current_address = i
             offset = target_address - current_address - 1
-            offset_string = '#' + offset
+            offset_string = '#' + str(offset)
 
-            addi_instructions = ['ADDI', 'r7', 'r0', offset_string]
-            
+            addi_instructions = ['ADDI', 'r4', 'r0', offset_string]
+            binary_str_1 = process_tokens(addi_instructions)
+            machine_code.append(binary_str_1)
+
         else:
             binary_str = process_tokens(instructions[i])
             machine_code.append(binary_str)
