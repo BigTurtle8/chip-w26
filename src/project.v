@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Your Name
+ * Copyright (c) 2026 Marcus Alagar, Derek Maeshiro, Chloe Zhong
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,12 +16,44 @@ module tt_um_8bit_processor_vga (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+    wire hsync, vsync;
+    wire display_on;
+    wire [9:0] hpos, vpos;
+    hvsync_generator hvsync_gen (
+        .clk(clk),
+        .reset(~rst_n),
+        .hsync(hsync),
+        .vsync(vsync),
+        .display_on(display_on),
+        .hpos(hpos),
+        .vpos(vpos)
+    );
 
-  // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+    wire sck;
+    wire [2:0] cs; // ACTIVE LOW, Flash (0), RAM A (1), RAM B (2)
+    wire mosi, miso;
+    wire [1:0] r, g, b;
+    processor_top proc_top (
+        .clk(clk),
+        .rst(~rst_n),
+        .sck(sck),
+        .cs(cs),
+        .mosi(mosi),
+        .miso(miso),
+        .xpos(hpos[7:0]),
+        .ypos(vpos[7:0]),
+        .rgb({r, g, b})
+    );
+
+    // TinyVGA PMOD
+    assign uo_out = {hsync, b[0], g[0], r[0], vsync, b[1], g[1], r[1]};
+
+    // TinyTapeout QSPI PMOD
+    assign miso = uio_in[2];
+    assign uio_out = {cs[2], cs[1], 2'b0, sck, 1'b0, mosi, cs[0]};
+    assign uio_oe = 8'b11111011;
+
+    // List all unused inputs to prevent warnings
+    wire _unused = &{ena, ui_in, uio_in, 1'b0};
 
 endmodule
