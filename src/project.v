@@ -15,13 +15,25 @@ module tt_um_example (
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
+  // program counter (PC)
+  reg [15:0] program_counter;
+  // register file
+  reg [15:0] registers [0:7];
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+  // fetch logic: PC needs to know how to react when the clk ticks or when the rst_n is pressed
+  always @(posedge clk) begin
+    if (!rst_n) begin // resetting (n = negative/active low)
+      program_counter <= 16'b0;
+    end else begin
+      // otherwise, update PC by 2
+      program_counter <= program_counter + 16'd2;
+    end
+  end
 
-  // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+  // 16-bit instruction that the PC will read
+  reg [15:0] instruction;
+
+  wire [2:0] opcode = instruction[15:13];
+  destination
 
 endmodule
