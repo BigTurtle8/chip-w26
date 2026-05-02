@@ -1,9 +1,9 @@
 # Tiny Tapeout project information
 project:
-  title:        "Lorenz Attractor VGA"      # Project title
+  title:        "8-Bit Processor with VGA"      # Project title
   author:       "Marcus Alagar, Derek Maeshiro, Chloe Zhong"      # Your name
   discord:      "@bigturtle8, @professorderek, @Chlow"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  "Display, on VGA, time-evolving solution to Lorenz Attractor system of ODEs."      # One line description of what your project does
+  description:  "8-bit processor (with 16 bit instructions) that interacts with VGA"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
 
@@ -11,7 +11,7 @@ project:
   tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
-  top_module:  "tt_um_lorenz_attractor_vga"
+  top_module:  "tt_um_8bit_processor_vga"
 
   # List your project's source files here.
   # Source files must be in ./src and you must list each source file separately, one per line.
@@ -43,14 +43,14 @@ pinout:
   uo[7]: "HSYNC"
 
   # Bidirectional pins
-  uio[0]: "NC"
-  uio[1]: "NC"
-  uio[2]: "NC"
-  uio[3]: "NC"
+  uio[0]: "CS0 (Flash)"
+  uio[1]: "MOSI"
+  uio[2]: "MISO"
+  uio[3]: "SCK"
   uio[4]: "NC"
   uio[5]: "NC"
-  uio[6]: "NC"
-  uio[7]: "NC"
+  uio[6]: "CS1 (RAM A)"
+  uio[7]: "CS2 (RAM B)"
 
 # Do not change!
 yaml_version: 6
