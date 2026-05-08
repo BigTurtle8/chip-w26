@@ -30,7 +30,7 @@ module executor #(
 )(
     input  wire clk,
     input  wire rst,
-
+    
     // Controller Interface
     input  wire begin_executor,
     output reg  executor_done,
@@ -136,7 +136,7 @@ module executor #(
                 EXECUTE_ALU: begin
                     if (shft) begin
                         result <= l ? (reg_val1 << reg_val2[2:0]) : (reg_val1 >> reg_val2[2:0]);
-                    end else if (/* Opcode for NAND */) begin
+                    end else if (4'b0101) begin
                         result <= ~(reg_val1 & reg_val2);
                     end else begin
                         result <= reg_val1 + reg_val2; // ADD / ADDI
