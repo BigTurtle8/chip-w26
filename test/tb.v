@@ -8,7 +8,7 @@ module tb ();
 
   // Wire up the inputs and outputs:
   reg clk;
-  reg rst_n;
+  reg rst;
   wire sck;
   wire [2:0] cs;
   wire mosi;
@@ -19,7 +19,7 @@ module tb ();
 
   processor_top dut (
     .clk(clk),
-    .rst(rst_n),
+    .rst(rst),
     .sck(sck),
     .cs(cs),
     .mosi(mosi),
@@ -30,11 +30,12 @@ module tb ();
 );
 
   initial begin
+    /*
       // Reach into: dut -> mh (the mem_handler) -> rom (the array)
       $readmemb("program.hex", dut.mh.rom);
-      
+    */
       // Standard Cocotb/Dumpfile setup
-      $dumpfile("tb.vcd");
+      $dumpfile("tb.fst");
       $dumpvars(0, tb);
   end
 
