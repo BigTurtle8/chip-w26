@@ -38,4 +38,17 @@ module processor_no_spi #(
     assign mem_w_val = 8'b0;
     assign rgb = 6'b0;
 
+    // Derek added code below
+    pc #(
+        .IALEN(IALEN),
+        .ALEN(ALEN)
+    ) pc_instance (
+        .clk(clk),
+        .rst(rst),
+        .pc(fetch_addr),      // This was the error! .pc connects to fetch_addr
+        .incr(1'b0),          // Placeholder: tie to 0 until you connect the controller
+        .new_addr(11'b0),     // Placeholder: tie to 0
+        .we(1'b0)             // Placeholder: tie to 0
+    );
+
 endmodule

@@ -172,7 +172,7 @@ def assemble(file_path):
 
 
 with open("program.hex", "w") as f:
-   machine_code = assemble("test.asm")
+   machine_code = assemble("fibonacci.asm")
    for code in machine_code:
        f.write(code + "\n")
 

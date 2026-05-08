@@ -32,13 +32,22 @@ module mem_handler #(
                             mem_req, mem_w_req, mem_addr,
                             mem_w_val, miso};
 
-    assign fetch_valid = 1'b0;
-    assign fetch_instr = 16'b0;
+    // assign fetch_valid = 1'b0;
+    // assign fetch_instr = 16'b0;
     assign mem_valid = 1'b0;
     assign mem_val = 8'b0;
     assign mem_w_done = 1'b0;
     assign sck = 1'b0;
     assign cs = 3'b0;
     assign mosi = 1'b0;
+
+    // Added by Derek: Inside mem_handler module (for loading the hex file into the testbench)
+    reg [15:0] rom [0:2047];
+    // Replace the assign fetch_instr = 16'b0; with this:
+    assign fetch_instr = rom[fetch_addr];
+    assign fetch_valid = 1'b1; // Tell CPU the data is ready
+    initial begin
+        $readmemb("program.hex", rom);
+    end
 
 endmodule
