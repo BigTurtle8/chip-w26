@@ -1,63 +1,74 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, RisingEdge
+from cocotb.triggers import FallingEdge, RisingEdge, Timer, Edge, ReadOnly
+
+def load_hex_file(file_path):
+    mem = {}
+    idx = 0
+    with open(file_path, "r") as f:
+        for line in f:
+            # Strip comments and whitespace
+            clean_line = line.split("//")[0].strip()
+            if clean_line:
+                try:
+                    # CHANGE THIS: Use base 2 for binary strings
+                    val = int(clean_line, 2) & 0xFFFF
+                    mem[idx] = val
+                    idx += 1
+                except ValueError:
+                    # Fallback for actual Hex if needed
+                    val = int(clean_line, 16) & 0xFFFF
+                    mem[idx] = val
+                    idx += 1
+    return mem
+
+from cocotb.triggers import ReadOnly
+
+async def memory_model(dut, mem_dict):
+    while True:
+        await Edge(dut.fetch_req) 
+        if dut.fetch_req.value == 1:
+            addr = dut.fetch_addr.value.to_unsigned()
+            word_idx = addr >> 1
+            
+            # This will show up in your terminal logs
+            val = mem_dict.get(word_idx, 0)
+            dut._log.info(f"MEMORY: Fetch Addr {addr} (Word {word_idx}) -> Driving {val:016b}")
+            
+            dut.fetch_instr.value = val
+            dut.fetch_valid.value = 1
+        else:
+            dut.fetch_valid.value = 0
 
 @cocotb.test()
 async def test_project(dut):
-    dut._log.info("Start Simulation")
+    # 0. Load the memory dictionary
+    my_program = load_hex_file("program.hex")
+    
+    # Start the memory background task
+    cocotb.start_soon(memory_model(dut, my_program))
 
-    # 1. Start the clock
-    clock = Clock(dut.clk, 10, units="us")
-    cocotb.start_soon(clock.start())
+    # 1. Start Clock
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
 
-    # 2. Reset the CPU
-    dut._log.info("Resetting...")
+    # 2. Initial Setup (Reset)
     dut.rst.value = 1
-    # Clean up references to ui_in/uo_out since they aren't in your tb.v
-    await ClockCycles(dut.clk, 10)
+    # Ensure we hit at least 2-3 rising edges of CLK while RST is high
+    await Timer(50, unit="ns") 
+    await RisingEdge(dut.clk)
+    await RisingEdge(dut.clk)
     dut.rst.value = 0
-    dut._log.info("Reset Released")
 
-    await ClockCycles(dut.clk, 500)
-
-    '''
-    # 3. The "Sequential" Testing
-    # Instead of checking math, we watch the CPU run your program.hex
-    for i in range(50):
+    # 4. Monitoring Loop
+    for i in range(100):
         await RisingEdge(dut.clk)
         
-        # Pull the Program Counter (PC) value from deep inside your Verilog
-        # Path: tb -> processor_top (dut) -> proc (no_spi) -> pc_inst -> pc_out
-        try:
-            current_pc = dut.dut.proc.pc_val.value # Adjust this path to match your Verilog
-            dut._log.info(f"Cycle {i}: PC is {current_pc}")
-        except AttributeError:
-            # If the path is wrong, this prevents a crash while you're debugging names
-            pass
+        # Current status
+        pc_val = dut.dut.pc_instance.pc.value
+        instr_val = dut.fetch_instr.value
+        
+        dut._log.info(f"Cycle {i:2d} | PC: {pc_val} | Instr: {instr_val}")
 
-    # 4. The Final Assertion
-    # Check if a specific register reached the value you expected from your ASM
-    # final_val = dut.dut.proc.executor.reg_bank[3].value
-    # assert final_val == 1
-
-    # Reset for only 2 cycles instead of 10 to see movement faster
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 2)
-    dut.rst_n.value = 1
-
-    # Run for MORE cycles
-    for i in range(50):
-        await RisingEdge(dut.clk)
-        # Use .integer to see 0 instead of 00000000000
-        pc_val = dut.dut.proc.fetch_addr.value.to_unsigned()
-        instr_val = str(dut.dut.proc.fetch_instr.value)
-        # dut._log.info(f"Cycle {i} | PC: {pc_val} | Hex: {instr_val}")
-        # Add this inside your loop in test.py
-        # Add this right after Reset Released
-        try:
-            # We remove '.proc' because mh is a sibling of proc, not a child
-            rom_val = dut.dut.mh.rom[0].value
-            dut._log.info(f"Direct ROM[0] Check: {rom_val}")
-        except Exception as e:
-            dut._log.info(f"Could not reach ROM: {e}")
-    '''
+        # If your hardware isn't generating fetch_done yet, 
+        # keep your 'force' logic here, but the memory_model 
+        # above will at least provide REAL instructions now.

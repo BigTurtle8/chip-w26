@@ -121,10 +121,10 @@ module executor #(
                 READ_R2: begin
                     if (r2_or_imm) begin
                         reg_val2 <= {{2{imm[5]}}, imm}; // Sign extend
-                        state <= (load || store) ? MEM_START : EXECUTE_ALU;
+                        state <= state_t'((load || store) ? MEM_START : EXECUTE_ALU);
                     end else begin
                         reg_val2 <= out_reg; // Logic: Point Reg Digger to index 'rt'
-                        state <= (load || store) ? MEM_START : EXECUTE_ALU;
+                        state <= state_t'((load || store) ? MEM_START : EXECUTE_ALU);
                     end
                     
                     // Special Case: BLT uses 'ro' which is in tf[3:1]

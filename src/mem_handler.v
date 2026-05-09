@@ -53,14 +53,13 @@ module mem_handler #(
     assign fetch_instr = mem_instr;
     assign fetch_valid = fetch_req;
 
-    /*
+    
     // Added by Derek: Inside mem_handler module (for loading the hex file into the testbench)
+    // ROM array for the hex file
     reg [15:0] rom [0:2047];
-    // Replace the assign fetch_instr = 16'b0; with this:
-    assign fetch_instr = rom[fetch_addr];
-    assign fetch_valid = 1'b1; // Tell CPU the data is ready
-    initial begin
-        $readmemb("program.hex", rom);
-    end*/
+
+    // Connect the ROM to the fetch interface
+    assign fetch_instr = rom[fetch_addr[IALEN-1:1]]; // Index by word, not byte
+    assign fetch_valid = fetch_req; 
 
 endmodule
