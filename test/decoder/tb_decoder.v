@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 module tb (
     input  wire clk,
-    input  wire rst_n,
-    input  wire [15:0] ins,
+    input  wire rst,
+    input  wire [15:0] instruction,
     input  wire begin_decode,
     output wire store,
     output wire load,
@@ -17,8 +17,8 @@ module tb (
 );
     decoder dut (
         .clk(clk),
-        .rst_n(rst_n),
-        .ins(ins),
+        .rst(rst),
+        .instruction(instruction),
         .begin_decode(begin_decode),
         .store(store),
         .load(load),
