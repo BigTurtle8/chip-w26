@@ -8,8 +8,6 @@ from cocotb.triggers import ClockCycles, ReadWrite, ReadOnly, NextTimeStep, Risi
 
 @cocotb.test()
 async def test_fetch(dut):
-    dut._log.info("Start")
-
     # Set the clock period to 10 us (100 KHz)
     clock = Clock(dut.clk, 10, unit="us")
     cocotb.start_soon(clock.start())
@@ -27,7 +25,62 @@ async def test_fetch(dut):
     await ClockCycles(dut.clk, 10)
     dut.rst.value = 0
 
-    dut._log.info("Test regular fetch cycle")
+    await test_fetch_cycle(dut, 6, 0b001_001_000_011101_0)
+
+
+@cocotb.test()
+async def test_load(dut):
+    # Set the clock period to 10 us (100 KHz)
+    clock = Clock(dut.clk, 10, unit="us")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.rst.value = 1
+    dut.fetch_req.value = 0
+    dut.fetch_addr.value = 0
+    dut.mem_req.value = 0
+    dut.mem_w_req.value = 0
+    dut.mem_addr.value = 0
+    dut.mem_w_val.value = 0
+    dut.miso.value = 0
+    await ClockCycles(dut.clk, 10)
+    dut.rst.value = 0
+
+    await test_load_cycle(dut, 15, 0xe2)
+
+
+@cocotb.test()
+async def test_fetch_then_load(dut):
+    # Set the clock period to 10 us (100 KHz)
+    clock = Clock(dut.clk, 10, unit="us")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.rst.value = 1
+    dut.fetch_req.value = 0
+    dut.fetch_addr.value = 0
+    dut.mem_req.value = 0
+    dut.mem_w_req.value = 0
+    dut.mem_addr.value = 0
+    dut.mem_w_val.value = 0
+    dut.miso.value = 0
+    await ClockCycles(dut.clk, 10)
+    dut.rst.value = 0
+
+    await test_fetch_cycle(dut, 1000, 0b100_011_100_000_0000)
+    await test_load_cycle(dut, 15, 0xe2)
+    await test_fetch_cycle(dut, 502, 0b101_011_100_010_0000)
+    await test_fetch_cycle(dut, 138, 0b010_100_010_0000000)
+
+
+# Test regular fetch cycle at a certain 24-bit address
+# and for a certain 16-bit instruction.
+# Assumes no other memory request occuring at same time
+async def test_fetch_cycle(dut, address, instruction):
+    dut._log.info("Test fetch at addr [" + str(address) +"] for instruction "
+                    + format(instruction, "#018b"))
 
     # Wait for one clock cycle to see the output values
     # https://docs.cocotb.org/en/stable/timing_model.html
@@ -47,7 +100,7 @@ async def test_fetch(dut):
     dut._log.info("On fetch request, should not see any combinational output")
     await NextTimeStep()
     dut.fetch_req.value = 1;
-    dut.fetch_addr.value = 6
+    dut.fetch_addr.value = address
 
     await ReadWrite()
     assert dut.cs.value == 0b111
@@ -79,11 +132,10 @@ async def test_fetch(dut):
     dut._log.info("Expect to see 0x03 on MOSI on rising edge of SCK")
     await check_mosi_value(dut, 0x03, 8)
 
-    dut._log.info("Expect to see 6 as the 24-bit address through SPI on MOSI")
-    await check_mosi_value(dut, 6, 24)
+    dut._log.info("Expect to see correct 24-bit address through SPI on MOSI")
+    await check_mosi_value(dut, address, 24)
 
     dut._log.info("Write intended instruction through MISO")
-    instruction = 0b001_001_000_011101_0
     await write_miso_value(dut, instruction, 16)
 
     dut._log.info("Now wait for expected fetch_valid, then de-request")
@@ -94,42 +146,18 @@ async def test_fetch(dut):
     await ClockCycles(dut.clk, 1)  # De-request is latched on clock cycle
     dut.fetch_req.value = 0
 
-    await ClockCycles(dut.clk, 5)
+    await ClockCycles(dut.clk, 1)
 
 
-@cocotb.test()
-async def test_load(dut):
-    dut._log.info("Start")
-
-    # Set the clock period to 10 us (100 KHz)
-    clock = Clock(dut.clk, 10, unit="us")
-    cocotb.start_soon(clock.start())
-
-    # Reset
-    dut._log.info("Reset")
-    dut.rst.value = 1
-    dut.fetch_req.value = 0
-    dut.fetch_addr.value = 0
-    dut.mem_req.value = 0
-    dut.mem_w_req.value = 0
-    dut.mem_addr.value = 0
-    dut.mem_w_val.value = 0
-    dut.miso.value = 0
-    await ClockCycles(dut.clk, 10)
-    dut.rst.value = 0
+# Test regular fetch cycle at a certain 24-bit address
+# and for a certain 8-bit data value
+async def test_load_cycle(dut, address, data):
+    dut._log.info("Test load at addr [" + str(address) +"] for data "
+                    + format(data, "#010b"))
 
     dut._log.info("Test regular load cycle")
 
-    # Wait for one clock cycle to see the output values
-    # https://docs.cocotb.org/en/stable/timing_model.html
-    # cocotb will not have triggered the downstream effects
-    # of this clock cycle
     await ClockCycles(dut.clk, 1)
-    # By ReadWrite it will process the downstream effects,
-    # but further writes can be made and affect the circuit
-    # (i.e. like a combinational circuit)
-    # After ReadOnly, all values from this clock cycle
-    # are completed and we can see the effects
     await ReadOnly()
 
     assert dut.cs.value == 0b111
@@ -138,7 +166,7 @@ async def test_load(dut):
     dut._log.info("On fetch request, should not see any combinational output")
     await NextTimeStep()
     dut.mem_req.value = 1
-    dut.mem_addr.value = 15
+    dut.mem_addr.value = address
 
     await ReadWrite()
     assert dut.cs.value == 0b111
@@ -154,11 +182,10 @@ async def test_load(dut):
     dut._log.info("Expect to see 0x03 on MOSI on rising edge of SCK")
     await check_mosi_value(dut, 0x03, 8)
 
-    dut._log.info("Expect to see 15 as the 24-bit address through SPI on MOSI")
-    await check_mosi_value(dut, 15, 24)
+    dut._log.info("Expect to see correct 24-bit address through SPI on MOSI")
+    await check_mosi_value(dut, address, 24)
 
-    dut._log.info("Write intended date through MISO")
-    data = 0xe2
+    dut._log.info("Write intended data through MISO")
     await write_miso_value(dut, data, 8)
 
     dut._log.info("Now wait for expected fetch_valid, then de-request")
@@ -169,7 +196,7 @@ async def test_load(dut):
     await ClockCycles(dut.clk, 1)  # De-request is latched on clock cycle
     dut.mem_req.value = 0
 
-    await ClockCycles(dut.clk, 5)
+    await ClockCycles(dut.clk, 1)
 
 
 # Check the next `length` values from
