@@ -89,6 +89,32 @@ module executor #(
                                             : regs[rt];
                         rd <= f_rd;
                         state  <= EXEC;
+                    executor_done <= 0;
+                    pc_we <= 0;
+                    pc_incr <= 0;
+                    if (begin_executor) state <= READ_R1;
+                end
+
+                // Step 1: Get first operand (r1 / ra)
+                READ_R1: begin
+                    // Logic: Point Register Digger to index 'se'
+                    reg_val1 <= out_reg; 
+                    state <= READ_R2;
+                end
+
+                // Step 2: Get second operand (r2 / rv) or use Immediate
+                READ_R2: begin
+                    if (r2_or_imm) begin
+                        reg_val2 <= {{2{imm[5]}}, imm}; // Sign extend
+                        state <= state_t'((load || store) ? MEM_START : EXECUTE_ALU);
+                    end else begin
+                        reg_val2 <= out_reg; // Logic: Point Reg Digger to index 'rt'
+                        state <= state_t'((load || store) ? MEM_START : EXECUTE_ALU);
+                    end
+                    
+                    // Special Case: BLT uses 'ro' which is in tf[3:1]
+                    if (tf[0]) begin // If this is a BLT/Branch instr
+                         state <= BRANCH_EVAL;
                     end
                 end
  
