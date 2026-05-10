@@ -97,6 +97,35 @@ async def test_store(dut):
     await test_store_cycle(dut, 3, 0x11)
 
 
+@cocotb.test()
+async def test_all(dut):
+    # Set the clock period to 10 us (100 KHz)
+    clock = Clock(dut.clk, 10, unit="us")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.rst.value = 1
+    dut.fetch_req.value = 0
+    dut.fetch_addr.value = 0
+    dut.mem_req.value = 0
+    dut.mem_w_req.value = 0
+    dut.mem_addr.value = 0
+    dut.mem_w_val.value = 0
+    dut.miso.value = 0
+    await ClockCycles(dut.clk, 10)
+    dut.rst.value = 0
+
+    await test_fetch_cycle(dut, 0, 0b001_001_000_110110_0)
+    await test_fetch_cycle(dut, 2, 0b011_001_010_0000000)
+    await test_store_cycle(dut, 0b00110110, 0x00)
+    await test_fetch_cycle(dut, 4, 0b010_110_010_0000000)
+    await test_load_cycle(dut, 0b10110001, 0xf5)
+    await test_fetch_cycle(dut, 6, 0b001_010_000_111000_0)
+    await test_fetch_cycle(dut, 8, 0b100_010_001_000_0000)
+    await test_fetch_cycle(dut, 0, 0b001_001_000_110110_0)
+
+
 # Test regular fetch cycle at a certain 24-bit address
 # and for a certain 16-bit instruction.
 # Assumes no other memory request occuring at same time
