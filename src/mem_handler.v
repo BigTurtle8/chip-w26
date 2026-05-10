@@ -23,43 +23,139 @@ module mem_handler #(
     input  wire [7:0] mem_w_val,
     output wire mem_w_done,
     output wire sck,
-    output wire [2:0] cs,
-    output wire mosi,
+    output reg  [2:0] cs,               // ACTIVE LOW, 2 (RAM B), 1 (RAM A), 0 (Flash)
+    output reg  mosi,
     input  wire miso
 );
 
-    wire _unusued_ok = &{clk, rst, fetch_req, fetch_addr,
-                            mem_req, mem_w_req, mem_addr,
-                            mem_w_val, miso};
+    localparam IDLE = 2'b00;
+    localparam FETCHING = 2'b01;
+    localparam LOADING = 2'b10;
+    localparam WRITING = 2'b11;
+    reg [1:0] state;
 
-    // assign fetch_valid = 1'b0;
-    // assign fetch_instr = 16'b0;
-    assign mem_valid = 1'b0;
-    assign mem_val = 8'b0;
-    assign mem_w_done = 1'b0;
-    assign sck = 1'b0;
-    assign cs = 3'b0;
-    assign mosi = 1'b0;
+    wire start_fetch = (state == IDLE) & fetch_req;
+    wire start_load = (state == IDLE) & mem_req;
+    wire start_write = (state == IDLE) & mem_w_req;
+    wire finished_transaction;
 
-    reg [15:0] mem_instr;
-    always @(*) begin
-        case (fetch_addr)
-            11'd0  : mem_instr = 16'b0010010001100110;
-            11'd2  : mem_instr = 16'b1010100010000000;
-            default: mem_instr = 16'b1100100100010000;
-        endcase
+    always @(posedge clk) begin
+        if (rst) begin
+            state <= IDLE;
+            cs <= 3'b111;
+        end else if (start_fetch) begin
+            state <= FETCHING;
+            cs <= 3'b110;
+        end else if (start_load) begin
+            state <= LOADING;
+            cs <= 3'b101;
+        end else if (start_write) begin
+            state <= WRITING;
+            cs <= 3'b101;
+        end else if (finished_transaction) begin
+            state <= IDLE;
+            cs <= 3'b111;
+        end else begin
+            state <= state;
+            cs <= cs;
+        end
     end
 
-    assign fetch_instr = mem_instr;
-    assign fetch_valid = fetch_req;
+    // Need 8 sck for instruction, 24 for address,
+    // and up to 16 for data, so need to track up to 48
+    // sck, which fits within 6 bits
 
-    
-    // Added by Derek: Inside mem_handler module (for loading the hex file into the testbench)
-    // ROM array for the hex file
-    reg [15:0] rom [0:2047];
+    // "Divide" `clk` by 2 to use for `sck`
+    // `mosi` should NOT change while `sck` is changing,
+    //  for safety
+    wire in_transaction = (state != IDLE);
 
-    // Connect the ROM to the fetch interface
-    assign fetch_instr = rom[fetch_addr[IALEN-1:1]]; // Index by word, not byte
-    assign fetch_valid = fetch_req; 
+    reg [5:0] sck_counter;
+    reg sck_state;
+    always @(posedge clk) begin
+        if (rst) begin
+            sck_counter <= 6'd0;
+            sck_state <= 1'b0;
+        end else if (start_fetch | start_load | start_write) begin
+            sck_counter <= 6'd0;
+            sck_state <= 1'b0;
+        end else if (in_transaction & ~finished_transaction) begin
+            if (sck_state == 1) begin
+                sck_counter <= sck_counter + 1;
+            end else begin
+                sck_counter <= sck_counter;
+            end
+            sck_state <= ~sck_state;
+        end else begin
+            sck_counter <= 6'd0;
+            sck_state <= 1'b0;
+        end
+    end
+
+    // Don't output last `sck` cycle in read, as falling
+    // edge of previous is what loads and if cycle again then
+    // will begin reading from following byte
+    wire is_last_read = ((state == FETCHING) & (sck_counter == 47)) |
+                        ((state == LOADING) & (sck_counter == 39));
+    assign sck = is_last_read ? 1'b0 : sck_state ;
+
+    wire is_reading = (state == FETCHING) | (state == LOADING);
+    // Two (relevant) SPI instructions:
+    always @(*) begin
+        if (sck_counter < 8) begin
+            //  READ:  0x03
+            //  WRITE: 0x02
+            case (sck_counter)
+                0, 1, 2, 3, 4, 5:   mosi = 1'b0;
+                6:                  mosi = 1'b1;
+                7:                  mosi = is_reading ? 1'b1 : 1'b0;
+                default:            mosi = 1'b0;
+            endcase
+        end else if (sck_counter < 32) begin
+            // MSB first
+            if (state == FETCHING) begin
+                if (sck_counter < 32 - IALEN) begin
+                    mosi = 1'b0;
+                end else begin
+                    mosi = fetch_addr[31 - sck_counter];
+                end
+            end else begin
+                if (sck_counter < 32 - ALEN) begin
+                    mosi = 1'b0;
+                end else begin
+                    mosi = mem_addr[31 - sck_counter];
+                end
+            end
+        end else begin
+            mosi = 1'b0;
+        end
+    end
+
+    // Load in on rising edge of `sck_state`
+    // so that can also read last bit even though
+    // it isn'`sck` is not asserted on it
+    wire load = is_reading & (sck_counter >= 32) & (sck_state == 0);
+    wire [15:0] loaded_val;
+    sipo #( .WIDTH(16) ) sipo_inst (
+        .clk(clk),
+        .rst(rst),
+        .load(load),
+        .in(miso),
+        .out(loaded_val)
+    );
+
+    assign fetch_instr = loaded_val;
+    assign mem_val = loaded_val[7:0];
+
+    wire finished_fetch = (state == FETCHING) & (sck_counter == 48);
+    wire finished_load = (state == LOADING) & (sck_counter == 40);
+    wire finished_write = (state == WRITING) & (sck_counter == 40);
+    assign finished_transaction = finished_fetch |
+                                    finished_load |
+                                    finished_write;
+
+    assign fetch_valid = finished_fetch;
+    assign mem_valid = finished_load;
+    assign mem_w_done = finished_write;
 
 endmodule
