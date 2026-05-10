@@ -75,6 +75,28 @@ async def test_fetch_then_load(dut):
     await test_fetch_cycle(dut, 138, 0b010_100_010_0000000)
 
 
+@cocotb.test()
+async def test_store(dut):
+    # Set the clock period to 10 us (100 KHz)
+    clock = Clock(dut.clk, 10, unit="us")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.rst.value = 1
+    dut.fetch_req.value = 0
+    dut.fetch_addr.value = 0
+    dut.mem_req.value = 0
+    dut.mem_w_req.value = 0
+    dut.mem_addr.value = 0
+    dut.mem_w_val.value = 0
+    dut.miso.value = 0
+    await ClockCycles(dut.clk, 10)
+    dut.rst.value = 0
+
+    await test_store_cycle(dut, 3, 0x11)
+
+
 # Test regular fetch cycle at a certain 24-bit address
 # and for a certain 16-bit instruction.
 # Assumes no other memory request occuring at same time
@@ -193,6 +215,54 @@ async def test_load_cycle(dut, address, data):
 
     await ClockCycles(dut.clk, 1)  # De-request is latched on clock cycle
     dut.mem_req.value = 0
+
+    await ClockCycles(dut.clk, 1)
+
+
+# Test regular store cycle at a certain 24-bit address
+# with a certain 8-bit data value
+async def test_store_cycle(dut, address, data):
+    dut._log.info("--!!-- Test store at addr [" + str(address) +"] of data "
+                    + format(data, "#010b"))
+
+    await ClockCycles(dut.clk, 1)
+    await ReadOnly()
+
+    assert dut.cs.value == 0b111
+    assert dut.sck.value == 0
+
+    dut._log.info("On store request, should not see any combinational output")
+    await NextTimeStep()
+    dut.mem_w_req.value = 1
+    dut.mem_addr.value = address
+    dut.mem_w_val.value = data
+
+    await ReadWrite()
+    assert dut.cs.value == 0b111
+    assert dut.sck.value == 0
+
+    dut._log.info("But then on next cycle, should have (de)asserted CS")
+    await ClockCycles(dut.clk, 1)
+    await ReadOnly()
+
+    assert dut.cs.value == 0b101
+    assert dut.sck.value == 0
+
+    dut._log.info("Expect to see 0x02 on MOSI on rising edge of SCK")
+    await check_mosi_value(dut, 0x02, 8)
+
+    dut._log.info("Expect to see correct 24-bit address through SPI on MOSI")
+    await check_mosi_value(dut, address, 24)
+
+    dut._log.info("Expect to see correct data through MOSI")
+    await check_mosi_value(dut, data, 8)
+
+    dut._log.info("Now wait for expected mem_w_done, then de-request")
+    await RisingEdge(dut.mem_w_done)
+    await ReadOnly()
+
+    await ClockCycles(dut.clk, 1)  # De-request is latched on clock cycle
+    dut.mem_w_req.value = 0
 
     await ClockCycles(dut.clk, 1)
 

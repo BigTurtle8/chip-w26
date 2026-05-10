@@ -31,7 +31,7 @@ module mem_handler #(
     localparam IDLE = 2'b00;
     localparam FETCHING = 2'b01;
     localparam LOADING = 2'b10;
-    localparam WRITING = 2'b11;
+    localparam STORING = 2'b11;
     reg [1:0] state;
 
     wire start_fetch = (state == IDLE) & fetch_req;
@@ -50,7 +50,7 @@ module mem_handler #(
             state <= LOADING;
             cs <= 3'b101;
         end else if (start_write) begin
-            state <= WRITING;
+            state <= STORING;
             cs <= 3'b101;
         end else if (finished_transaction) begin
             state <= IDLE;
@@ -126,6 +126,8 @@ module mem_handler #(
                     mosi = mem_addr[31 - sck_counter];
                 end
             end
+        end else if ((state == STORING) & ~finished_transaction) begin
+            mosi = mem_w_val[39 - sck_counter];
         end else begin
             mosi = 1'b0;
         end
@@ -149,7 +151,7 @@ module mem_handler #(
 
     wire finished_fetch = (state == FETCHING) & (sck_counter == 48);
     wire finished_load = (state == LOADING) & (sck_counter == 40);
-    wire finished_write = (state == WRITING) & (sck_counter == 40);
+    wire finished_write = (state == STORING) & (sck_counter == 40);
     assign finished_transaction = finished_fetch |
                                     finished_load |
                                     finished_write;
