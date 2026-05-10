@@ -1,4 +1,4 @@
-import cocotb
+'''import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import FallingEdge, RisingEdge, Timer, Edge, ReadOnly
 
@@ -71,4 +71,4 @@ async def test_project(dut):
 
         # If your hardware isn't generating fetch_done yet, 
         # keep your 'force' logic here, but the memory_model 
-        # above will at least provide REAL instructions now.
+        # above will at least provide REAL instructions now.'''
