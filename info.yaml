@@ -21,6 +21,7 @@ project:
     - "hvsync_generator.v"
     - "processor_top.v"
     - "mem_handler.v"
+    - "sipo.v"
     - "processor_no_spi.v"
     - "controller.v"
     - "pc.v"
