@@ -79,7 +79,7 @@ async def test_fetch_then_load(dut):
 # and for a certain 16-bit instruction.
 # Assumes no other memory request occuring at same time
 async def test_fetch_cycle(dut, address, instruction):
-    dut._log.info("Test fetch at addr [" + str(address) +"] for instruction "
+    dut._log.info("--!!-- Test fetch at addr [" + str(address) +"] for instruction "
                     + format(instruction, "#018b"))
 
     # Wait for one clock cycle to see the output values
@@ -152,10 +152,8 @@ async def test_fetch_cycle(dut, address, instruction):
 # Test regular fetch cycle at a certain 24-bit address
 # and for a certain 8-bit data value
 async def test_load_cycle(dut, address, data):
-    dut._log.info("Test load at addr [" + str(address) +"] for data "
+    dut._log.info("--!!-- Test load at addr [" + str(address) +"] for data "
                     + format(data, "#010b"))
-
-    dut._log.info("Test regular load cycle")
 
     await ClockCycles(dut.clk, 1)
     await ReadOnly()
@@ -188,7 +186,7 @@ async def test_load_cycle(dut, address, data):
     dut._log.info("Write intended data through MISO")
     await write_miso_value(dut, data, 8)
 
-    dut._log.info("Now wait for expected fetch_valid, then de-request")
+    dut._log.info("Now wait for expected mem_valid, then de-request")
     await RisingEdge(dut.mem_valid)
     await ReadOnly()
     assert dut.mem_val.value == data 
