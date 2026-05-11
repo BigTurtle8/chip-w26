@@ -14,10 +14,13 @@ PROJECT_SOURCES = project.v \
                   pc.v \
                   fetcher.v \
                   decoder.v \
-				  loader_storer.v \
+                  loader_storer.v
+                  loader.v
+                  storer.v \
                   executor.v \
                   controller.v \
-                  register.v 
+                  register.v
+
 
 ifneq ($(GATES),yes)
 
@@ -43,7 +46,7 @@ VERILOG_SOURCES += $(PWD)/gate_level_netlist.v
 endif
 
 # Allow sharing configuration between design and testbench via `include`:
-COMPILE_ARGS 		+= -I$(SRC_DIR)
+COMPILE_ARGS		+= -I$(SRC_DIR)
 
 # Include the testbench sources:
 VERILOG_SOURCES += $(PWD)/tb.v

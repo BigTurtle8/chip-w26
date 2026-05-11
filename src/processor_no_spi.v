@@ -29,11 +29,6 @@ module processor_no_spi #(
 
     wire _unused_ok = &{mem_valid, mem_val, mem_w_done, xpos, ypos};
 
-    assign mem_req = 1'b0;
-    assign mem_w_req = 1'b0;
-    assign mem_addr = {ALEN{1'b0}};
-    assign mem_w_val = 8'b0;
-
     wire [IALEN-1:0] pc_addr;
     wire pc_incr;
     wire [IALEN-1:0] pc_new_addr;
@@ -118,6 +113,13 @@ module processor_no_spi #(
         .sf(sf),
         .imm(imm),
         .l(l),
+        .mem_req(mem_req),
+        .mem_w_req(mem_w_req),
+        .mem_addr(mem_addr),
+        .mem_valid(mem_valid),
+        .mem_val(mem_val),
+        .mem_w_val(mem_w_val),
+        .mem_w_done(mem_w_done),
         .pc_addr(pc_addr),
         .pc_incr(pc_incr),
         .pc_we(pc_we),

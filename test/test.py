@@ -1,6 +1,6 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import FallingEdge, RisingEdge, Timer, ReadOnly
+from cocotb.triggers import FallingEdge, RisingEdge, Timer, ReadOnly, First
 
 def load_hex_file(file_path):
     mem = {}
@@ -22,9 +22,7 @@ def load_hex_file(file_path):
                     idx += 1
     return mem
 
-from cocotb.triggers import ReadOnly
-
-async def memory_model(dut, mem_dict):
+async def flash_memory_model(dut, mem_dict):
     while True:
         await dut.fetch_req.value_change
         if dut.fetch_req.value == 1:
@@ -40,13 +38,39 @@ async def memory_model(dut, mem_dict):
         else:
             dut.fetch_valid.value = 0
 
+async def ram_memory_model(dut, mem_lst):
+    while True:
+        await First(dut.mem_req.value_change, dut.mem_w_req.value_change)
+        addr = dut.mem_addr.value.to_unsigned()
+        if dut.mem_req.value == 1:
+            val = mem_lst[addr]
+
+            # This will show up in your terminal logs
+            dut._log.info(f"RAM: Load Addr {addr} -> Driving {val}")
+
+            dut.mem_val.value = val
+            dut.mem_valid.value = 1
+        elif dut.mem_w_req.value == 1:
+            val = dut.mem_w_val.value
+
+            # This will show up in your terminal logs
+            dut._log.info(f"RAM: Store Addr {addr} -> Saving {val}")
+
+            mem_lst[addr] = val;
+            dut.mem_w_done.value = 1
+        else:
+            dut.mem_valid.value = 0
+            dut.mem_w_done.value = 0
+
 @cocotb.test()
 async def test_project(dut):
     # 0. Load the memory dictionary
-    my_program = load_hex_file("dummy_blt_neg.hex")
+    my_program = load_hex_file("dummy_ls.hex")
     
-    # Start the memory background task
-    cocotb.start_soon(memory_model(dut, my_program))
+    # Start the memory background tasks
+    cocotb.start_soon(flash_memory_model(dut, my_program))
+    ram_lst = [0] * 256
+    cocotb.start_soon(ram_memory_model(dut, ram_lst))
 
     # 1. Start Clock
     cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())

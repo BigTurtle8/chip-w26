@@ -29,7 +29,7 @@ module loader_storer #(
     always @(posedge clk) begin
         if (rst)
             is_started_store <= 0;
-        else if (begin_Ls)
+        else if (begin_ls)
             is_started_store <= is_store;
         else
             is_started_store <= is_started_store;
