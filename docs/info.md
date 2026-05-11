@@ -51,6 +51,8 @@ RAM accesses, through **LOAD** and **STORE** can address up to a value stored in
 
 Pull `rst_n` low, then flash desired program within the first 2048 bytes. Once let `rst_n` go high and start clocking, processor will begin fetching from address 0 and program (should) start running!
 
+Note that programs should end with an infinite loop or expect to restart once the program counter overflows.
+
 ## External hardware
 
 Referring to the 3 PMOD headers on the [default TT demo board](https://tinytapeout.com/specs/pcb/):
