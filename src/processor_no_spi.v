@@ -81,73 +81,66 @@ module processor_no_spi #(
     );
 
     wire store, load;
-    wire [3:0] tf;
-    wire [2:0] se;
-    wire [2:0] rt;
+    wire [2:0] tt;
+    wire [2:0] ns;
+    wire [2:0] sf;
     wire [5:0] imm;
     wire l;
-    wire r2_or_imm;
-    wire shft;
+    wire [2:0] op;
+ 
     decoder decoder_instance (
         .clk(clk),
-        .rst_n(~rst),      // To change to `rst`?
-        .ins(instr),    // To change to `instruction`?
+        .rst(rst),
+        .ins(instr),
         .begin_decode(begin_decode),
-        .store(store),
-        .load(load),
-        .tf(tf),
-        .se(se),
-        .rt(rt),
+        //.store(store),
+        //.load(load),
+        .tt(tt),
+        .ns(ns),
+        .sf(sf),
         .imm(imm),
         .l(l),
         .decode_done(decode_done),
-        .r2_or_imm(r2_or_imm),
-        .shft(shft)
+        .op(op)
     );
 
-    wire lsi_begin;
-    wire lsi_done = 1'b0;
+    //wire lsi_begin;
+    //wire lsi_done = 1'b0;
+    wire begin_execute;
+
     wire is_store;
-    wire [ALEN-1:0] addr;
-    wire [7:0] store_val;
-    wire [7:0] load_val = 8'b0;
-    wire [7:0] in_reg;
-    wire [7:0] out_reg = 8'b0;
+
     wire we;
+    wire [ALEN-1:0] new_addr;
+    //wire [7:0] store_val;
+    //wire [7:0] load_val = 8'b0;
+    //wire [7:0] in_reg;
+    //wire [7:0] out_reg = 8'b0;
+    
     executor #(
         .ALEN(ALEN),
         .IALEN(IALEN)
     ) exeggutor_instance (
         .clk(clk),
         .rst(rst),
-        .begin_executor(begin_executor),
+        .begin_execute(begin_executor),
         .executor_done(executor_done),
-        .store(store),
-        .load(load),
-        .tf(tf),
-        .se(se),
-        .rt(rt),
+        .op(op),
+        .tt(tt),
+        .ns(ns),
+        .sf(sf),
         .imm(imm),
         .l(l),
-        .r2_or_imm(r2_or_imm),
-        .shft(shft),
 
-        .lsi_begin(lsi_begin),
-        .lsi_done(lsi_done),
         .is_store(is_store),
-        .addr(addr),
-        .store_val(store_val),
-        .load_val(load_val),
-        .in_reg(in_reg),
-        .out_reg(out_reg),
         .we(we),
+        .new_addr(pc_new_addr)
+        //.store_val(store_val),
+        //.load_val(load_val),
+        //.we(we),
 
-        .pc_new_addr(pc_new_addr),
-        .pc_we(pc_we),
-        .pc_incr(pc_incr),
-        .current_pc(pc_addr)
     );
 
-    assign rgb = addr[6:1] ^ store_val[6:1] ^ in_reg[6:1];
+    assign rgb = 6'd0;
 
 endmodule

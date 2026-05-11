@@ -1,183 +1,168 @@
 module executor #(
-    parameter ALEN  = 8,
-    parameter IALEN = 11,
-    parameter NREGS = 8,
-    parameter WIDTH = 8
-) (
-    input  wire clk,
-    input  wire rst,
-    
-    input  wire store,
-    input  wire load,
+	parameter ALEN = 8,
+	parameter IALEN = 11
+)(
+    input wire clk,
+    input wire rst,
 
     // w/ controller
-    input  wire begin_execute,
+    input wire begin_execute,
     output reg executor_done,
 
     // w/ decoder
-    input  wire [3:0] tf,
-    input  wire [2:0] se,
-    input  wire [2:0] rt, 
-    input  wire [5:0] imm,
-    input  wire l,
-    input  wire r2_or_imm,
-    input  wire shft,
-    input  wire nand_op,
+	input wire [2:0] op,
+    input wire [2:0] tt,
+    input wire [2:0] ns,
+    input wire [2:0] sf, 
+    input wire [5:0] imm,
+	input wire l,
 
     // w/ loader/storer 
-    output reg lsi_begin,
-    input  wire lsi_done,
     output reg is_store,
-    output reg [ALEN-1:0] lsi_addr,
-    output reg [WIDTH-1:0] store_val,
-    input wire [WIDTH-1:0] load_val,
 
     // w/ pc
-    input  wire [IALEN-1:0] new_addr,
-    output reg pc_we,
-    output reg  [IALEN-1:0] pc_new_addr
-
+    output reg we,
+    output reg [IALEN-1:0] new_addr
 );
 
-    reg [WIDTH-1:0] regs [0:NREGS-1];
- 
-    reg [WIDTH-1:0] reg_r1;
-    reg [WIDTH-1:0] reg_r2;
-    reg [2:0] rd;
+	wire we1;
+	wire [ALEN-1:0] reg_in1;
+	wire [ALEN-1:0] reg_out1;
+	register reg1 (
+		.clk(clk),
+		.rst(rst),
+		.we(we1),
+		.in(reg_in1),
+		.out(reg_out1)
+	);
 
-    wire [2:0] f_rd  = tf[3:1];
-    wire f_blt = tf[0]; 
- 
-    // State machine
-    localparam IDLE = 2'd0;
-    localparam EXEC = 2'd1;
-    localparam MEM_WAIT = 2'd2;
- 
-    reg [1:0] state;
- 
-    integer i;
- 
-    always @(posedge clk or negedge rst) begin
-        if (!rst) begin
-            executor_done <= 1'b0;
-            lsi_begin <= 1'b0;
-            is_store <= 1'b0;
-            lsi_addr <= {ALEN{1'b0}};
-            store_val <= {WIDTH{1'b0}};
-            pc_we <= 1'b0;
-            pc_new_addr <= {IALEN{1'b0}};
-            rd <= 3'b0;
-            reg_r1 <= {WIDTH{1'b0}};
-            reg_r2 <= {WIDTH{1'b0}};
-            state <= IDLE;
-            for (i = 0; i < NREGS; i = i + 1)
-                regs[i] <= {WIDTH{1'b0}};
-        end else begin
-            // Default: clear one-pulse outputs
-            executor_done <= 1'b0;
-            lsi_begin <= 1'b0;
-            pc_we  <= 1'b0;
- 
-            case (state)
- 
-                // Wait for controller to kick off execution
-                IDLE: begin
-                    if (begin_execute) begin
-                        // Latch register values and destination
-                        reg_r1 <= regs[se];
-                        reg_r2 <= r2_or_imm ? {{(WIDTH-6){1'b0}}, imm}
-                                            : regs[rt];
-                        rd <= f_rd;
-                        state  <= EXEC;
-                    executor_done <= 0;
-                    pc_we <= 0;
-                    pc_incr <= 0;
-                    if (begin_executor) state <= READ_R1;
-                end
+	wire we2;
+	wire [ALEN-1:0] reg_in2;
+	wire [ALEN-1:0] reg_out2;
+	register reg2 (
+		.clk(clk),
+		.rst(rst),
+		.we(we2),
+		.in(reg_in2),
+		.out(reg_out2)
+	);
 
-                // Step 1: Get first operand (r1 / ra)
-                READ_R1: begin
-                    // Logic: Point Register Digger to index 'se'
-                    reg_val1 <= out_reg; 
-                    state <= READ_R2;
-                end
+	wire we3;
+	wire [ALEN-1:0] reg_in3;
+	wire [ALEN-1:0] reg_out3;
+	register reg3 (
+		.clk(clk),
+		.rst(rst),
+		.we(we3),
+		.in(reg_in3),
+		.out(reg_out3)
+	);
 
-                // Step 2: Get second operand (r2 / rv) or use Immediate
-                READ_R2: begin
-                    if (r2_or_imm) begin
-                        reg_val2 <= {{2{imm[5]}}, imm}; // Sign extend
-                        state <= state_t'((load || store) ? MEM_START : EXECUTE_ALU);
-                    end else begin
-                        reg_val2 <= out_reg; // Logic: Point Reg Digger to index 'rt'
-                        state <= state_t'((load || store) ? MEM_START : EXECUTE_ALU);
-                    end
-                    
-                    // Special Case: BLT uses 'ro' which is in tf[3:1]
-                    if (tf[0]) begin // If this is a BLT/Branch instr
-                         state <= BRANCH_EVAL;
-                    end
-                end
- 
-                // Execute the instruction
-                EXEC: begin
-                    if (load || store) begin
-                        // LOAD/STORE: address comes from reg[ra=tf[3:1]]
-                        // For STORE: value to write comes from reg[rv=se]
-                        lsi_addr  <= regs[f_rd][ALEN-1:0];
-                        is_store  <= store;
-                        store_val <= store ? regs[se] : {WIDTH{1'b0}};
-                        lsi_begin <= 1'b1;
-                        state <= MEM_WAIT;
- 
-                    end else if (f_blt) begin
-                        // BLT: if r1 < r2, jump to pc + ro (sign-extended)
-                        // ro = tf[3:1], sign-extended to IALEN bits
-                        if (reg_r1 < reg_r2) begin
-                            pc_we <= 1'b1;
-                            pc_new_addr <= new_addr
-                                          + {{(IALEN-3){tf[3]}}, tf[3:1]};
-                        end
-                        executor_done <= 1'b1;
-                        state <= IDLE;
- 
-                    end else if (shft) begin
-                        // SHFT / SHFTI: l=1 left shift, l=0 right shift
-                        // reg_r2 already holds r2 or imm depending on r2_or_imm
-                        regs[rd] <= l ? (reg_r1 << reg_r2[2:0])
-                                           : (reg_r1 >> reg_r2[2:0]);
-                        executor_done <= 1'b1;
-                        state <= IDLE;
- 
-                    end else if (nand_op) begin
-                        // NAND
-                        regs[rd] <= ~(reg_r1 & reg_r2);
-                        executor_done <= 1'b1;
-                        state <= IDLE;
- 
-                    end else begin
-                        // ADD / ADDI: reg_r2 already holds r2 or imm
-                        regs[rd] <= reg_r1 + reg_r2;
-                        executor_done <= 1'b1;
-                        state <= IDLE;
-                    end
-                end
- 
-                // Wait for loader/storer to finish
-                MEM_WAIT: begin
-                    if (lsi_done) begin
-                        // For LOAD, write result into rv (= se register)
-                        if (load)
-                            regs[se] <= load_val;
-                        executor_done <= 1'b1;
-                        state <= IDLE;
-                    end
-                end
- 
-                default: state <= IDLE;
- 
-            endcase
-        end
-    end
- 
+	wire we4;
+	wire [ALEN-1:0] reg_in4;
+	wire [ALEN-1:0] reg_out4;
+	register reg4 (
+		.clk(clk),
+		.rst(rst),
+		.we(we4),
+		.in(reg_in4),
+		.out(reg_out4)
+	);
+
+	wire we5;
+	wire [ALEN-1:0] reg_in5;
+	wire [ALEN-1:0] reg_out5;
+	register reg5 (
+		.clk(clk),
+		.rst(rst),
+		.we(we5),
+		.in(reg_in5),
+		.out(reg_out5)
+	);
+
+	wire we6;
+	wire [7:0] reg_in6;
+	wire [7:0] reg_out6;
+	register reg6 (
+		.clk(clk),
+		.rst(rst),
+		.we(we6),
+		.in(reg_in6),
+		.out(reg_out6)
+	);
+
+	wire we7;
+	wire [7:0] reg_in7;
+	wire [7:0] reg_out7;
+	register reg7 (
+		.clk(clk),
+		.rst(rst),
+		.we(we7),
+		.in(reg_in7),
+		.out(reg_out7)
+	);
+
+	reg [7:0] op_out, r1_val, r2_val;
+
+	assign we1 = (tt == 3'd1);
+	assign we2 = (tt == 3'd2);
+	assign we3 = (tt == 3'd3);
+	assign we4 = (tt == 3'd4);
+	assign we5 = (tt == 3'd5);
+	assign we6 = (tt == 3'd6);
+	assign we7 = (tt == 3'd7);
+
+	assign reg_in1 = (we1) ? op_out : 8'd0;
+	assign reg_in2 = (we2) ? op_out : 8'd0;
+	assign reg_in3 = (we3) ? op_out : 8'd0;
+	assign reg_in4 = (we4) ? op_out : 8'd0;
+	assign reg_in5 = (we5) ? op_out : 8'd0;
+	assign reg_in6 = (we6) ? op_out : 8'd0;
+	assign reg_in7 = (we7) ? op_out : 8'd0;
+
+	always @(*) begin
+		case(ns)
+			3'd1: r1_val = reg_out1;
+			3'd2: r1_val = reg_out2;
+			3'd3: r1_val = reg_out3;
+			3'd4: r1_val = reg_out4;
+			3'd5: r1_val = reg_out5;
+			3'd6: r1_val = reg_out6;
+			3'd7: r1_val = reg_out7;
+			default: r1_val = 8'd0;
+		endcase
+
+		case(sf)
+			3'd1: r2_val = reg_out1;
+			3'd2: r2_val = reg_out2;
+			3'd3: r2_val = reg_out3;
+			3'd4: r2_val = reg_out4;
+			3'd5: r2_val = reg_out5;
+			3'd6: r2_val = reg_out6;
+			3'd7: r2_val = reg_out7;
+			default: r2_val = 8'd0;
+		endcase
+
+        case(op)
+			3'b000: op_out = r1_val + r2_val;
+			3'b001: op_out = r1_val + imm;
+			// 3'b010: 
+			3'b011: begin
+					is_store = 1'b1;
+					end
+			3'b100: begin
+					we = 1'b1;
+					new_addr = r1_val < r2_val ? new_addr + op_out : new_addr;
+					end 
+			3'b101: op_out = ~(r1_val & r2_val);
+			3'b110: op_out = l ? r1_val << r2_val : r1_val >> r2_val;
+			3'b111: op_out = l ? r1_val << imm : r1_val >> imm;
+			default: op_out = 8'b0;
+        endcase
+	end
+
+
 endmodule
-    
+
+
+

@@ -1,4 +1,4 @@
-'''import cocotb
+import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import FallingEdge, RisingEdge, Timer, Edge, ReadOnly
 
@@ -43,7 +43,7 @@ async def memory_model(dut, mem_dict):
 @cocotb.test()
 async def test_project(dut):
     # 0. Load the memory dictionary
-    my_program = load_hex_file("program.hex")
+    my_program = load_hex_file("dummy.hex")
     
     # Start the memory background task
     cocotb.start_soon(memory_model(dut, my_program))
@@ -71,4 +71,4 @@ async def test_project(dut):
 
         # If your hardware isn't generating fetch_done yet, 
         # keep your 'force' logic here, but the memory_model 
-        # above will at least provide REAL instructions now.'''
+        # above will at least provide REAL instructions now.

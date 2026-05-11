@@ -16,7 +16,8 @@ PROJECT_SOURCES = project.v \
                   decoder.v \
 				  loader_storer.v \
                   executor.v \
-                  controller.v
+                  controller.v \
+                  register.v 
 
 ifneq ($(GATES),yes)
 
