@@ -62,8 +62,8 @@ module mem_handler #(
     end
 
     // Need 8 sck for instruction, 24 for address,
-    // and up to 16 for data, so need to track up to 48
-    // sck, which fits within 6 bits
+    // up to 16 for data, and 2 for synchronization
+    // so need to track up to "50 sck", which fits within 6 bits
 
     // "Divide" `clk` by 2 to use for `sck`
     // `mosi` should NOT change while `sck` is changing,
@@ -92,11 +92,11 @@ module mem_handler #(
         end
     end
 
-    // Don't output last `sck` cycle in read, as falling
+    // Don't output last `sck` cycles in read, as falling
     // edge of previous is what loads and if cycle again then
     // will begin reading from following byte
-    wire is_last_read = ((state == FETCHING) & (sck_counter == 47)) |
-                        ((state == LOADING) & (sck_counter == 39));
+    wire is_last_read = ((state == FETCHING) & (sck_counter >= 47)) |
+                        ((state == LOADING) & (sck_counter >= 39));
     assign sck = is_last_read ? 1'b0 : sck_state ;
 
     wire is_reading = (state == FETCHING) | (state == LOADING);
@@ -133,24 +133,33 @@ module mem_handler #(
         end
     end
 
+    // Brute-force sync over 4 cycles (2 SCK cycles),
+    // in case of metastability issues
+    reg [3:0] syncing_miso;
+    always @(posedge clk) begin
+        if (rst)    syncing_miso = 4'b0;
+        else        syncing_miso <= {syncing_miso[3:0], miso};
+    end
+    wire sync_miso = syncing_miso[3];
+
     // Load in on rising edge of `sck_state`
     // so that can also read last bit even though
-    // it isn'`sck` is not asserted on it
+    // `sck` is not asserted on it
     wire load = is_reading & (sck_counter >= 32) & (sck_state == 0);
     wire [15:0] loaded_val;
     sipo #( .WIDTH(16) ) sipo_inst (
         .clk(clk),
         .rst(rst),
         .load(load),
-        .in(miso),
+        .in(sync_miso),
         .out(loaded_val)
     );
 
     assign fetch_instr = loaded_val;
     assign mem_val = loaded_val[7:0];
 
-    wire finished_fetch = (state == FETCHING) & (sck_counter == 48);
-    wire finished_load = (state == LOADING) & (sck_counter == 40);
+    wire finished_fetch = (state == FETCHING) & (sck_counter == 50);
+    wire finished_load = (state == LOADING) & (sck_counter == 42);
     wire finished_write = (state == STORING) & (sck_counter == 40);
     assign finished_transaction = finished_fetch |
                                     finished_load |
