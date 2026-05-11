@@ -9,7 +9,7 @@ module register (
 	reg [7:0] data;
 	always @(posedge clk) begin
 		if (rst) begin
-			data <= 8'd3; // MUST CHANGE LATER!!! BACK TO 8'd0
+			data <= 8'd0;
 		end else if (we) begin
 			data <= in;
 		end else begin
