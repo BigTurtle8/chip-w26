@@ -47,9 +47,22 @@ The first instruction fetched will always be at address 0 in flash memory.
 
 RAM accesses, through **LOAD** and **STORE** can address up to a value stored in one of the registers. In other words, only addresses representable in 8 bits are available. This means there are 256 bytes of read/write RAM available.
 
-### VGA
+### Register Mappings
 
-??
+```
+reg | desc
+----------
+r0  | R , always zero
+r1  | RW, general-purpose
+r2  | RW, general-purpose
+r3  | RW, general-purpose
+r4  | RW, general-purpose
+r5  | RW, general-purpose
+r6  | RW, general-purpose
+r7  | RW, r7[5:0] is attached to {r[1:0], g[1:0], b[1:0]},
+    |     with an automatic check to see if is in
+    |     display range to not hurt the VGA screen
+```
 
 ## How to test
 
