@@ -6,42 +6,22 @@ module decoder (
     input wire begin_decode,
 
     output wire [2:0] op,
-    output reg [2:0] tt, // og: tf
-    output reg [2:0] ns, // og: se
-    output reg [2:0] sf, // og: rt
-    output reg [5:0] imm,
-    output reg l,
+    output wire [2:0] tt, // og: tf
+    output wire [2:0] ns, // og: se
+    output wire [2:0] sf, // og: rt
+    output wire [5:0] imm,
+    output wire l,
 
-    output reg decode_done
-    
+    output wire decode_done
 );
  
-    wire [2:0] opcode = ins[15:13];
-    assign op = opcode;
- 
-    always @(posedge clk) begin
-        if (rst) begin
-            tt <= 3'd0;
-            ns <= 3'd0;
-            sf <= 3'd0;
-            imm <= 6'd0;
-            l <= 1'd0;
+    assign op = ins[15:13];
+    assign tt = ins[12:10];
+    assign ns = ins[9:7];
+    assign sf = ins[6:4];
+    assign imm = ins[6:1];
+    assign l = ins[0];
 
-            decode_done <= 1'd0;
-
-        end else if (begin_decode) begin
-
-            tt <= ins[12:10];
-            ns <= ins[9:7];
-            sf <= ins[6:4];
-            imm <= ins[6:1];
-            l <= ins[0];
-
-            decode_done <= 1'b1;
-
-        end else begin
-            decode_done <= 1'b0;
-        end
-    end
+    assign decode_done = begin_decode;
  
 endmodule

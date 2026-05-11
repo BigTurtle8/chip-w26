@@ -87,14 +87,11 @@ module processor_no_spi #(
     wire [5:0] imm;
     wire l;
     wire [2:0] op;
- 
     decoder decoder_instance (
         .clk(clk),
         .rst(rst),
         .ins(instr),
         .begin_decode(begin_decode),
-        //.store(store),
-        //.load(load),
         .tt(tt),
         .ns(ns),
         .sf(sf),
@@ -104,19 +101,9 @@ module processor_no_spi #(
         .op(op)
     );
 
-    //wire lsi_begin;
-    //wire lsi_done = 1'b0;
-    wire begin_execute;
-
     wire is_store;
-
     wire we;
     wire [ALEN-1:0] new_addr;
-    //wire [7:0] store_val;
-    //wire [7:0] load_val = 8'b0;
-    //wire [7:0] in_reg;
-    //wire [7:0] out_reg = 8'b0;
-    
     executor #(
         .ALEN(ALEN),
         .IALEN(IALEN)
@@ -131,14 +118,10 @@ module processor_no_spi #(
         .sf(sf),
         .imm(imm),
         .l(l),
-
-        .is_store(is_store),
-        .we(we),
-        .new_addr(pc_new_addr)
-        //.store_val(store_val),
-        //.load_val(load_val),
-        //.we(we),
-
+        .pc_addr(pc_addr),
+        .pc_incr(pc_incr),
+        .pc_we(pc_we),
+        .pc_new_addr(pc_new_addr)
     );
 
     assign rgb = 6'd0;
