@@ -15,6 +15,10 @@ module tt_um_madech_8bit_processor_vga (
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
+  // program counter (PC)
+  reg [15:0] program_counter;
+  // register file
+  reg [15:0] registers [0:7];
 
     wire hsync, vsync;
     wire display_on;
