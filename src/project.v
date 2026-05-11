@@ -15,22 +15,17 @@ module tt_um_madech_8bit_processor_vga (
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
-  // program counter (PC)
-  reg [15:0] program_counter;
-  // register file
-  reg [15:0] registers [0:7];
 
     wire hsync, vsync;
     wire display_on;
-    wire [9:0] hpos, vpos;
     hvsync_generator hvsync_gen (
         .clk(clk),
         .reset(~rst_n),
         .hsync(hsync),
         .vsync(vsync),
         .display_on(display_on),
-        .hpos(hpos),
-        .vpos(vpos)
+        .hpos(),
+        .vpos()
     );
 
     wire sck;
@@ -44,8 +39,6 @@ module tt_um_madech_8bit_processor_vga (
         .cs(cs),
         .mosi(mosi),
         .miso(miso),
-        .xpos(hpos[7:0]),
-        .ypos(vpos[7:0]),
         .rgb({raw_r, raw_g, raw_b})
     );
 

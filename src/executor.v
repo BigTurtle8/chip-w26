@@ -33,8 +33,6 @@ module executor #(
     output wire [IALEN-1:0] pc_new_addr,
 
     // w/ project
-    input wire [7:0] xpos,
-    input wire [7:0] ypos,
     output wire [5:0] rgb               // { R[1:0], G[1:0], B[1:0] }
 );
 
@@ -86,6 +84,24 @@ module executor #(
         .out(reg_out5)
     );
 
+    wire [7:0] reg_out6;
+    register reg6 (
+        .clk(clk),
+        .rst(rst),
+        .we(we[6]),
+        .in(reg_in),
+        .out(reg_out6)
+    );
+
+    wire [7:0] reg_out7;
+    register reg7 (
+        .clk(clk),
+        .rst(rst),
+        .we(we[7]),
+        .in(reg_in),
+        .out(reg_out7)
+    );
+
     wire is_branch = op == 3'b100;
     wire is_load_store = (op == 3'b010) | (op == 3'b011);
     wire is_rr_ri = ~(is_branch | is_load_store);
@@ -102,8 +118,8 @@ module executor #(
             3'd3: tt_val = reg_out3;
             3'd4: tt_val = reg_out4;
             3'd5: tt_val = reg_out5;
-            3'd6: tt_val = xpos;
-            3'd7: tt_val = ypos;
+            3'd6: tt_val = reg_out6;
+            3'd7: tt_val = reg_out7;
             default: tt_val = 8'd0;
         endcase
 
@@ -113,8 +129,8 @@ module executor #(
             3'd3: ns_val = reg_out3;
             3'd4: ns_val = reg_out4;
             3'd5: ns_val = reg_out5;
-            3'd6: ns_val = xpos;
-            3'd7: ns_val = ypos;
+            3'd6: ns_val = reg_out6;
+            3'd7: ns_val = reg_out7;
             default: ns_val = 8'd0;
         endcase
 
@@ -124,8 +140,8 @@ module executor #(
             3'd3: sf_val = reg_out3;
             3'd4: sf_val = reg_out4;
             3'd5: sf_val = reg_out5;
-            3'd6: sf_val = xpos;
-            3'd7: sf_val = ypos;
+            3'd6: sf_val = reg_out6;
+            3'd7: sf_val = reg_out7;
             default: sf_val = 8'd0;
         endcase
     end
@@ -146,8 +162,8 @@ module executor #(
     end
 
     wire [7:0] rr_ri_we = {
-        1'b0,
-        1'b0,
+        tt == 3'd7,
+        tt == 3'd6,
         tt == 3'd5,
         tt == 3'd4,
         tt == 3'd3,
@@ -187,8 +203,8 @@ module executor #(
     );
 
     wire [7:0] load_we = {
-        1'b0,
-        1'b0,
+        ns == 3'd7,
+        ns == 3'd6,
         ns == 3'd5,
         ns == 3'd4,
         ns == 3'd3,
@@ -211,6 +227,6 @@ module executor #(
 
     assign executor_done = delayed_finished | finished_store_load;
 
-    assign rgb = reg_out5[5:0];
+    assign rgb = reg_out7[5:0];
 
 endmodule

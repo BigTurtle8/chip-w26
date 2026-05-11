@@ -20,8 +20,6 @@ module tb ();
   wire mem_w_done;
 
   // IO Signals
-  wire [7:0] xpos = 8'h0;
-  wire [7:0] ypos = 8'h0;
   reg [5:0] rgb;
 
   processor_no_spi dut (
@@ -38,8 +36,6 @@ module tb ();
     .mem_val(mem_val),
     .mem_w_val(mem_w_val),
     .mem_w_done(mem_w_done),
-    .xpos(xpos),
-    .ypos(ypos),
     .rgb(rgb)
   );
 

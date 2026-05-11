@@ -22,8 +22,6 @@ module processor_no_spi #(
     input  wire [7:0] mem_val,
     output wire [7:0] mem_w_val,
     input  wire mem_w_done,
-    input  wire [7:0] xpos,
-    input  wire [7:0] ypos,
     output wire [5:0] rgb               // { R[1:0], G[1:0], B[1:0] }
 );
 
@@ -122,8 +120,6 @@ module processor_no_spi #(
         .pc_incr(pc_incr),
         .pc_we(pc_we),
         .pc_new_addr(pc_new_addr),
-        .xpos(xpos),
-        .ypos(ypos),
         .rgb(rgb)
     );
 

@@ -12,8 +12,6 @@ module processor_top (
     output wire [2:0] cs,
     output wire mosi,
     input  wire miso,
-    input  wire [7:0] xpos,
-    input  wire [7:0] ypos,
     output wire [5:0] rgb
 );
 
@@ -45,8 +43,6 @@ module processor_top (
         .mem_val(mem_val),
         .mem_w_val(mem_w_val),
         .mem_w_done(mem_w_done),
-        .xpos(xpos),
-        .ypos(ypos),
         .rgb(rgb)
     );
 
