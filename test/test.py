@@ -5,7 +5,7 @@ from cocotb.triggers import ClockCycles, FallingEdge, RisingEdge, Timer, ReadWri
 @cocotb.test()
 async def test_project(dut):
     # 0. Load the memory dictionary
-    my_program = load_hex_file("program_vga_compat.hex")
+    my_program = load_hex_file("dummy_vga.hex")
 
     # 1. Start Clock
     cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
@@ -25,7 +25,8 @@ async def test_project(dut):
     await RisingEdge(dut.clk)
     dut.rst_n.value = 1
 
-    await ClockCycles(dut.clk, 50000)
+    # await ClockCycles(dut.clk, 50000)
+    await ClockCycles(dut.clk, 300000)
 
 def load_hex_file(file_path):
     mem = {}
