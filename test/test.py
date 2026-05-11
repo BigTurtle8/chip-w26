@@ -1,6 +1,6 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import FallingEdge, RisingEdge, Timer, Edge, ReadOnly
+from cocotb.triggers import FallingEdge, RisingEdge, Timer, ReadOnly
 
 def load_hex_file(file_path):
     mem = {}
@@ -26,7 +26,7 @@ from cocotb.triggers import ReadOnly
 
 async def memory_model(dut, mem_dict):
     while True:
-        await Edge(dut.fetch_req) 
+        await dut.fetch_req.value_change
         if dut.fetch_req.value == 1:
             addr = dut.fetch_addr.value.to_unsigned()
             word_idx = addr >> 1
