@@ -32,7 +32,7 @@ module tt_um_madech_8bit_processor_vga (
     wire sck;
     wire [2:0] cs; // ACTIVE LOW, Flash (0), RAM A (1), RAM B (2)
     wire mosi, miso;
-    wire [1:0] r, g, b;
+    wire [1:0] raw_r, raw_g, raw_b;
     processor_top proc_top (
         .clk(clk),
         .rst(~rst_n),
@@ -42,8 +42,12 @@ module tt_um_madech_8bit_processor_vga (
         .miso(miso),
         .xpos(hpos[7:0]),
         .ypos(vpos[7:0]),
-        .rgb({r, g, b})
+        .rgb({raw_r, raw_g, raw_b})
     );
+
+    wire [1:0] r = display_on ? raw_r : 2'b00;
+    wire [1:0] g = display_on ? raw_g : 2'b00;
+    wire [1:0] b = display_on ? raw_b : 2'b00;
 
     // TinyVGA PMOD
     assign uo_out = {hsync, b[0], g[0], r[0], vsync, b[1], g[1], r[1]};

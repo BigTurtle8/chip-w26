@@ -65,7 +65,7 @@ async def ram_memory_model(dut, mem_lst):
 @cocotb.test()
 async def test_project(dut):
     # 0. Load the memory dictionary
-    my_program = load_hex_file("fixed_program.hex")
+    my_program = load_hex_file("program_vga_compat.hex")
     
     # Start the memory background tasks
     cocotb.start_soon(flash_memory_model(dut, my_program))

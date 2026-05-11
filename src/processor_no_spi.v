@@ -27,8 +27,6 @@ module processor_no_spi #(
     output wire [5:0] rgb               // { R[1:0], G[1:0], B[1:0] }
 );
 
-    wire _unused_ok = &{mem_valid, mem_val, mem_w_done, xpos, ypos};
-
     wire [IALEN-1:0] pc_addr;
     wire pc_incr;
     wire [IALEN-1:0] pc_new_addr;
@@ -123,9 +121,11 @@ module processor_no_spi #(
         .pc_addr(pc_addr),
         .pc_incr(pc_incr),
         .pc_we(pc_we),
-        .pc_new_addr(pc_new_addr)
+        .pc_new_addr(pc_new_addr),
+        .xpos(xpos),
+        .ypos(ypos),
+        .rgb(rgb)
     );
 
-    assign rgb = 6'd0;
 
 endmodule
