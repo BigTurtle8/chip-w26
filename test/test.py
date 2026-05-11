@@ -65,7 +65,7 @@ async def ram_memory_model(dut, mem_lst):
 @cocotb.test()
 async def test_project(dut):
     # 0. Load the memory dictionary
-    my_program = load_hex_file("dummy_ls.hex")
+    my_program = load_hex_file("fixed_program.hex")
     
     # Start the memory background tasks
     cocotb.start_soon(flash_memory_model(dut, my_program))
@@ -84,7 +84,7 @@ async def test_project(dut):
     dut.rst.value = 0
 
     # 4. Monitoring Loop
-    for i in range(100):
+    for i in range(500):
         await RisingEdge(dut.clk)
         
         # Current status

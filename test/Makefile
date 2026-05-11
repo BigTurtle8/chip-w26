@@ -14,8 +14,8 @@ PROJECT_SOURCES = project.v \
                   pc.v \
                   fetcher.v \
                   decoder.v \
-                  loader_storer.v
-                  loader.v
+                  loader_storer.v \
+                  loader.v \
                   storer.v \
                   executor.v \
                   controller.v \
