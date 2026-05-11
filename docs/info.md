@@ -17,7 +17,7 @@ Due to constraints with using SPI for memory, `chip-w26` executes a non-store/lo
 
 ![Eight 16-bit instructions and their specific encodings](ISA_encodings.png)
 
-Note: For **BLT**, values in input registers (`r1`, `r2`, and `ro`) and the immediates (`imm`) are treated as signed numbers using two's complement.
+Note: For **ADD**, **ADDI**, **BLT**, values in input registers (`r1`, `r2`, and `ro`) and the immediates (`imm`) are treated as signed numbers using two's complement. This means that the immediate in **ADDI** can at most range from [-32, 31].
 
 Note: If try to branch to a negative program counter address, is undefined behavior. i.e. `BLT (-6) (0) (1)` as the 0th instruction (where program counter would be 0).
 
