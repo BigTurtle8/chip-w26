@@ -5,7 +5,7 @@
 
 `default_nettype none
 
-module tt_um_8bit_processor_vga (
+module tt_um_madech_8bit_processor_vga (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -47,6 +47,7 @@ module tt_um_8bit_processor_vga (
 
     // TinyVGA PMOD
     assign uo_out = {hsync, b[0], g[0], r[0], vsync, b[1], g[1], r[1]};
+    assign uo_out = 8'b0;
 
     // TinyTapeout QSPI PMOD
     assign miso = uio_in[2];

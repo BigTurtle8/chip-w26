@@ -6,11 +6,12 @@ SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-# Add EVERY .v file that your processor needs to run
 PROJECT_SOURCES = project.v \
+                  hvsync_generator.v \
                   processor_top.v \
                   processor_no_spi.v \
                   mem_handler.v \
+                  sipo.v \
                   pc.v \
                   fetcher.v \
                   decoder.v \
