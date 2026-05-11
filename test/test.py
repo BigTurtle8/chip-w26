@@ -43,7 +43,7 @@ async def memory_model(dut, mem_dict):
 @cocotb.test()
 async def test_project(dut):
     # 0. Load the memory dictionary
-    my_program = load_hex_file("dummy_nand.hex")
+    my_program = load_hex_file("dummy_blt_neg.hex")
     
     # Start the memory background task
     cocotb.start_soon(memory_model(dut, my_program))

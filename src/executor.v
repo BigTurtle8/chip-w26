@@ -27,14 +27,14 @@ module executor #(
 );
 
     wire [7:0] we;
-    reg [7:0] op_out;
+    reg [7:0] reg_in;
 
     wire [7:0] reg_out1;
     register reg1 (
         .clk(clk),
         .rst(rst),
         .we(we[1]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out1)
     );
 
@@ -43,7 +43,7 @@ module executor #(
         .clk(clk),
         .rst(rst),
         .we(we[2]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out2)
     );
 
@@ -52,7 +52,7 @@ module executor #(
         .clk(clk),
         .rst(rst),
         .we(we[3]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out3)
     );
 
@@ -61,7 +61,7 @@ module executor #(
         .clk(clk),
         .rst(rst),
         .we(we[4]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out4)
     );
 
@@ -70,7 +70,7 @@ module executor #(
         .clk(clk),
         .rst(rst),
         .we(we[5]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out5)
     );
 
@@ -79,7 +79,7 @@ module executor #(
         .clk(clk),
         .rst(rst),
         .we(we[6]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out6)
     );
 
@@ -88,11 +88,23 @@ module executor #(
         .clk(clk),
         .rst(rst),
         .we(we[7]),
-        .in(op_out),
+        .in(reg_in),
         .out(reg_out7)
     );
 
-    reg [7:0] r1_val, r2_val;
+    /*
+    localparam IDLE = 1'b0;
+    localparam ACCESSING = 1'b1;
+    reg state;
+    always @(posedge clk) begin
+        if (rst) begin
+            state <= 1'b0;
+        end else if ((state == IDLE) & ) begin
+        end
+    end
+    */
+
+    reg [7:0] op_out, r1_val, r2_val;
 
     wire [7:0] raw_we = {
         tt == 3'd7,
@@ -105,6 +117,7 @@ module executor #(
         1'b0
     };
 
+    // Mux correct register
     always @(*) begin
         case(ns)
             3'd1: r1_val = reg_out1;
@@ -129,6 +142,11 @@ module executor #(
         endcase
     end
 
+    wire is_branch = op == 3'b100;
+    wire is_load_store = (op == 3'b010) | (op == 3'b011);
+    wire is_rr_ri = ~(is_branch | is_load_store);
+
+    // Register-Register, Register-Immediate
     always @(*) begin
         case(op)
             3'b000: op_out = $signed(r1_val) + $signed(r2_val);
@@ -147,17 +165,35 @@ module executor #(
         endcase
     end
 
-    assign we = raw_we & {8{begin_execute}};
+    assign we = raw_we & {8{begin_execute & is_rr_ri}};
+    assign reg_in = op_out;
+
+    // Branch
+    reg [7:0] ro_val;
+    always @(*) begin
+        case(tt)
+            3'd1: ro_val = reg_out1;
+            3'd2: ro_val = reg_out2;
+            3'd3: ro_val = reg_out3;
+            3'd4: ro_val = reg_out4;
+            3'd5: ro_val = reg_out5;
+            3'd6: ro_val = reg_out6;
+            3'd7: ro_val = reg_out7;
+            default: ro_val = 8'd0;
+        endcase
+    end
+
+    wire lt = $signed(r1_val) < $signed(r2_val);
+    assign pc_we = begin_execute & is_branch & lt;
+    assign pc_new_addr = $signed(pc_addr) + $signed(ro_val);
+
+    assign pc_incr = begin_execute & (~is_branch | (is_branch & ~lt));
 
     reg delayed_finished;
     always @(posedge clk) begin
         delayed_finished <= begin_execute;
     end
 
-    assign pc_incr = begin_execute;
     assign executor_done = delayed_finished;
-
-    assign pc_we = 1'b0;
-    assign pc_new_addr = 11'b0;
 
 endmodule
